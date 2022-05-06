@@ -1,0 +1,47 @@
+version: '3.3'
+
+volumes:
+  static_value:
+  media_value:
+  postgresql_data:
+
+services:
+  db:
+    image: postgres:13.0-alpine
+    restart: always
+    volumes:
+      - /var/lib/postgresql/data
+    env_file:
+      - ./.env
+
+  backend:
+    image: agmaksim/foodgram_backend:v10
+    restart: always
+    volumes:
+      - static_value:/app/static/
+      - media_value:/app/media/
+    depends_on:
+      - db
+    env_file:
+      - ./.env
+
+  frontend:
+    image: agmaksim/foodgram_frontend:v1
+    volumes:
+      - ../frontend/:/app/result_build/
+    depends_on:
+      - db
+
+  nginx:
+    image: nginx:1.19.3
+    ports:
+      - "80:80"
+    volumes:
+      - ./nginx.conf:/etc/nginx/conf.d/default.conf
+      - ../frontend/build:/usr/share/nginx/html/
+      - ../docs/redoc.html:/usr/share/nginx/html/api/docs/redoc.html
+      - ../docs/openapi-schema.yml:/usr/share/nginx/html/api/docs/openapi-schema.yml
+      - static_value:/var/html/static/
+      - media_value:/var/html/media/
+    depends_on:
+      - backend
